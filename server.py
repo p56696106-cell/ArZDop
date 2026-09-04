@@ -13,10 +13,9 @@ import asyncio
 
 from fastapi import FastAPI, Request, HTTPException, Depends, Header, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
-from telegram import Update, Bot
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import httpx
 
 # ==================== ФИКС ДЛЯ DATETIME В SQLITE ====================
 def adapt_datetime(dt):
@@ -31,7 +30,6 @@ sqlite3.register_converter("TIMESTAMP", convert_datetime)
 # ==================== КОНФИГ ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8707239993:AAEVh5E16a-lUyLzGov1fLIXvhV2IEAb788")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "8814572765"))
-CASE_OPEN_PRICE = 500
 DB_NAME = os.getenv("DB_NAME", "arzdrop.db")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 CHANNEL_ARZDROP = "@ARZDROPCS2"
@@ -327,10 +325,6 @@ def init_db():
         cur.execute('UPDATE users SET is_admin = 1 WHERE id = ?', (ADMIN_ID,))
         conn.commit()
     
-    # ========== ИНИЦИАЛИЗАЦИЯ КЕЙСОВ И СКИНОВ ==========
-    # Здесь ваш код с кейсами (я сократил для примера, но вы вставите все кейсы)
-    # БОМЖ, DOLLAR, TERRORIST, NIKO COVAK, ZONT1X, DONK, DENIS
-    
     conn.close()
     print("✅ База данных инициализирована")
 
@@ -551,6 +545,15 @@ def get_all_users() -> List[Dict]:
                'steam_url', 'steam_id', 'group_id', 'sub_arzdrop', 'sub_artstudio',
                'last_top_notification', 'agreed_to_terms', 'withdraw_allowed', 'donator_level']
     return [dict(zip(columns, row)) for row in rows]
+
+def get_cases_list() -> List[Dict]:
+    """Получить список всех кейсов"""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute('SELECT id, name, price_open, description FROM cases')
+    rows = cur.fetchall()
+    conn.close()
+    return [{"id": r[0], "name": r[1], "price": r[2], "description": r[3]} for r in rows]
 
 # ==================== ТОПЫ ====================
 def get_top_users() -> List[Dict]:
@@ -1262,11 +1265,6 @@ def unpin_message(chat_id: int, message_id: int):
         pass
 
 # ==================== PYDANTIC МОДЕЛИ ====================
-class UserData(BaseModel):
-    user_id: int
-    username: Optional[str] = None
-    first_name: Optional[str] = None
-
 class CaseOpenRequest(BaseModel):
     user_id: int
     case_name: str
@@ -1412,10 +1410,18 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
         manager.disconnect(user_id, websocket)
         logger.info(f"User {user_id} disconnected")
 
-# ==================== ЭНДПОИНТЫ ====================
+# ==================== ГЛАВНАЯ СТРАНИЦА (ФРОНТ) ====================
 
 @app.get("/")
-async def root():
+async def serve_index():
+    """Главная страница Mini App"""
+    return FileResponse("index.html")
+
+# ==================== API ЭНДПОИНТЫ ====================
+
+@app.get("/api")
+async def api_root():
+    """Список всех API эндпоинтов"""
     return {
         "name": "ARZDROP API",
         "version": "1.0.0",
@@ -1423,6 +1429,7 @@ async def root():
         "endpoints": [
             "/api/user/{user_id}",
             "/api/inventory/{user_id}",
+            "/api/cases",
             "/api/case/open",
             "/api/promo/use",
             "/api/withdraw/request",
@@ -1433,8 +1440,19 @@ async def root():
             "/api/balance/{user_id}",
             "/api/daily/{user_id}",
             "/api/daily/claim",
-            "/api/friends",
-            "/api/friends/accept"
+            "/api/friends/send",
+            "/api/friends/{user_id}",
+            "/api/friends/requests/{user_id}",
+            "/api/friends/accept/{request_id}",
+            "/api/admin/give",
+            "/api/admin/withdraw/process",
+            "/api/admin/withdrawals",
+            "/api/clan/{user_id}",
+            "/api/clan/join",
+            "/api/skin/sell",
+            "/api/steam/link",
+            "/api/steam/unlink",
+            "/api/config"
         ]
     }
 
@@ -1442,6 +1460,11 @@ async def root():
 async def get_user_data(user_id: int):
     """Получение данных пользователя"""
     user = get_user(user_id)
+    if not user:
+        # Создаём пользователя если его нет
+        create_user(user_id)
+        user = get_user(user_id)
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -1488,6 +1511,12 @@ async def get_user_inventory(user_id: int, limit: int = 50, offset: int = 0):
         "offset": offset,
         "value": get_inventory_value(user_id)
     }
+
+@app.get("/api/cases")
+async def get_cases():
+    """Получить список всех кейсов"""
+    cases = get_cases_list()
+    return {"cases": cases}
 
 @app.post("/api/case/open")
 async def open_case_endpoint(request: CaseOpenRequest):
@@ -1565,22 +1594,16 @@ async def withdraw_request(request: WithdrawRequest):
 
 @app.post("/api/deposit")
 async def deposit_request(request: DepositRequest):
-    """Пополнение баланса (для админа)"""
+    """Пополнение баланса"""
     user = get_user(request.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Только админ может пополнять
-    if not user.get('is_admin', False):
-        raise HTTPException(status_code=403, detail="Only admin can deposit")
-    
-    # Для обычного пользователя - создание запроса на пополнение
-    # (здесь должна быть интеграция с платежной системой)
-    
     return {
         "success": True,
         "message": "Запрос на пополнение создан",
-        "amount_coins": int(request.amount_rub * COURSE)
+        "amount_coins": int(request.amount_rub * COURSE),
+        "course": COURSE
     }
 
 @app.post("/api/clan/create")
@@ -1802,24 +1825,20 @@ async def unlink_steam_endpoint(user_id: int):
         raise HTTPException(status_code=400, detail="Steam not linked or not found")
     
     return {"success": True, "message": "Steam отвязан"}
-# ... весь ваш код с эндпоинтами API ...
 
-# ==================== ОТДАЧА ФРОНТА ====================
-
-@app.get("/")
-async def serve_index():
-    """Главная страница Mini App"""
-    return FileResponse("index.html")
-
-# Для любого другого пути - тоже index.html (SPA)
-@app.get("/{path:path}")
-async def serve_spa(path: str):
-    """Все пути ведут на index.html"""
-    # Если запрашивают существующий файл (картинка, и т.д.)
-    if os.path.exists(path):
-        return FileResponse(path)
-    # Иначе отдаём index.html
-    return FileResponse("index.html")
+@app.get("/api/config")
+async def get_config():
+    """Конфигурация для фронта"""
+    return {
+        "course": COURSE,
+        "sell_percent": SELL_PRICE_PERCENT,
+        "channels": {
+            "arzdrop": CHANNEL_ARZDROP,
+            "artstudio": CHANNEL_ARTSTUDIO
+        },
+        "achievement_levels": ACHIEVEMENT_LEVELS,
+        "achievement_rewards": ACHIEVEMENT_REWARDS
+    }
 
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
