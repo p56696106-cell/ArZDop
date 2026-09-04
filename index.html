@@ -898,15 +898,33 @@ body {
   z-index: 9999;
 }
 
-.skin-image-loading {
-  background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.admin-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: adminPulse 2s ease-in-out infinite;
 }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+@keyframes adminPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(238, 90, 36, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(238, 90, 36, 0.6); }
+}
+
+.admin-panel-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important;
+  color: #fff !important;
+  border-color: #ee5a24 !important;
+}
+
+.admin-panel-btn:hover {
+  box-shadow: 0 0 30px rgba(238, 90, 36, 0.4) !important;
 }
 </style>
 </head>
@@ -926,7 +944,7 @@ body {
   </div>
 </div>
 
-<div class="nav-tabs">
+<div class="nav-tabs" id="navTabs">
   <div class="nav-tab active" data-section="cases" onclick="showSection('cases')">📦 Кейсы</div>
   <div class="nav-tab" data-section="inventory" onclick="showSection('inventory')">🎒 Инвентарь</div>
   <div class="nav-tab" data-section="daily" onclick="showSection('daily')">📅 Ежедневка</div>
@@ -951,7 +969,7 @@ body {
       <div class="card-title">🎒 Мой инвентарь</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <span style="color:var(--text-secondary);font-size:13px;">Всего предметов: <span id="invCount" style="color:var(--neon-green);">0</span></span>
-        <span style="color:var(--text-secondary);font-size:13px;">Стоимость: <span id="invValue" style="color:var(--neon-green);font-family:Orbitron;">0</span> ₽</span>
+        <span style="color:var(--text-secondary);font-size:13px;">Стоимость: <span id="invValue" style="color:var(--neon-green);font-family:Orbitron;">0</span> 🪙</span>
       </div>
       <div class="inventory-grid" id="inventoryGrid">
         <div class="loading-spinner"></div>
@@ -964,7 +982,7 @@ body {
       <div class="daily-label">Текущая серия</div>
       <div class="daily-streak" id="dailyStreak">0</div>
       <div class="daily-label">дней подряд</div>
-      <div class="daily-reward" id="dailyReward">+50 монет</div>
+      <div class="daily-reward" id="dailyReward">+50 🪙</div>
       <button class="btn-primary" id="claimDailyBtn" onclick="claimDaily()">Забрать награду</button>
     </div>
     <div class="card" style="margin-top:16px;">
@@ -997,7 +1015,7 @@ body {
       <div class="card-title">⚔️ Мой клан</div>
       <div id="myClanInfo">
         <p style="color:var(--text-secondary);text-align:center;padding:20px;">Вы не состоите в клане</p>
-        <button class="btn-primary" onclick="showCreateClanModal()">Создать клан (100K)</button>
+        <button class="btn-primary" onclick="showCreateClanModal()">Создать клан (100K 🪙)</button>
       </div>
     </div>
     <div class="card">
@@ -1020,7 +1038,7 @@ body {
     <div class="stats-grid">
       <div class="stat-item">
         <div class="stat-value" id="statBalance">0</div>
-        <div class="stat-label">Баланс</div>
+        <div class="stat-label">Баланс 🪙</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="statOpened">0</div>
@@ -1066,82 +1084,24 @@ body {
     <div class="modal-title">⚔️ Создать клан</div>
     <input type="text" class="promo-input" id="clanNameInput" placeholder="Название клана" style="margin-bottom:12px;text-transform:none;">
     <input type="text" class="promo-input" id="clanTagInput" placeholder="Тег (2-5 символов)" style="margin-bottom:16px;text-transform:uppercase;">
-    <p style="color:var(--text-secondary);font-size:12px;margin-bottom:16px;">Стоимость: 100,000 монет</p>
+    <p style="color:var(--text-secondary);font-size:12px;margin-bottom:16px;">Стоимость: 100,000 🪙</p>
     <button class="btn-primary" onclick="createClan()">Создать</button>
     <button class="btn-primary" style="margin-top:8px;background:transparent;border:1px solid var(--card-border);color:var(--text-secondary);" onclick="closeModal('createClanModal')">Отмена</button>
   </div>
 </div>
 
 <script>
+// ==================== КОНФИГ ====================
+const API_BASE = window.location.origin;
+const ADMIN_ID = 8814572765;
+
+let currentUserId = null;
+let ws = null;
+let userData = null;
+let isAdmin = false;
+
 // ==================== SKIN IMAGE RESOLVER ====================
 const SkinImageResolver = {
-  cache: new Map(),
-
-  knownSkins: {
-    'ak-47': {
-      'redline': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_ak47_cu_ak47_cogthings_light_large.3d8ca09c3c08f8911d99f52e02e50050e3febe63.png',
-      'asiimov': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_ak47_cu_ak47_asimov_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'vulcan': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_ak47_cu_ak47_vulcan_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'fire serpent': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_ak47_cu_ak47_fireserpent_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'case hardened': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_ak47_aq_ak47_oil_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    },
-    'm4a4': {
-      'asiimov': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_m4a1_cu_m4a4_asiimov_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'howl': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_m4a1_cu_m4a4_howl_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'neo-noir': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_m4a1_cu_m4a4_neo-noir_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    },
-    'awp': {
-      'dragon lore': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_awp_cu_awp_dragon_lore_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'asiimov': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_awp_cu_awp_asimov_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'hyper beast': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_awp_cu_awp_hyper_beast_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    },
-    'desert eagle': {
-      'blaze': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_deagle_aa_flames_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'kumicho dragon': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_deagle_cu_deagle_kumicho_dragon_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    },
-    'usp-s': {
-      'kill confirmed': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_usp_silencer_cu_usp_kill_confirmed_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    },
-    'glock-18': {
-      'fade': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_glock_aa_fade_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    },
-    'knife': {
-      'doppler': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_knife_doppler_phase1_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'tiger tooth': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_knife_tiger_tooth_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png',
-      'crimson web': 'https://steamcdn-a.akamaihd.net/apps/730/icons/econ/default_generated/weapon_knife_crimson_web_light_large.6b2d855d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.png'
-    }
-  },
-
-  getImageUrl(weapon, skinName) {
-    const key = (weapon + '|' + skinName).toLowerCase();
-    if (this.cache.has(key)) return this.cache.get(key);
-
-    const w = weapon.toLowerCase().replace(/\s+/g, '-');
-    const s = skinName.toLowerCase();
-
-    if (this.knownSkins[w] && this.knownSkins[w][s]) {
-      const url = this.knownSkins[w][s];
-      this.cache.set(key, url);
-      return url;
-    }
-    return null;
-  },
-
-  createSkinImage(weapon, skinName, rarity, className = 'skin-image') {
-    const url = this.getImageUrl(weapon, skinName);
-    const rarityColor = this.getRarityColor(rarity);
-
-    if (url) {
-      return `<img src="${url}" alt="${weapon} | ${skinName}" class="${className}" onerror="this.style.display='none';this.parentElement.querySelector('.skin-fallback').style.display='flex'" loading="lazy">`;
-    }
-    return '';
-  },
-
-  createSkinFallback(weapon, skinName, rarity) {
-    const rarityColor = this.getRarityColor(rarity);
-    return `<div class="skin-image-placeholder skin-fallback" style="background: linear-gradient(135deg, ${rarityColor}22, ${rarityColor}11);"><span style="font-size:32px;">🔫</span></div>`;
-  },
-
   getRarityColor(rarity) {
     const colors = {
       'consumer': '#b0c3d9', 'industrial': '#5e98d9', 'mil-spec': '#4b69ff',
@@ -1149,69 +1109,45 @@ const SkinImageResolver = {
       'gold': '#ffd700', 'contraband': '#ffae00'
     };
     return colors[rarity?.toLowerCase()] || '#fff';
-  },
-
-  async fetchSkinImagesFromDB() {
-    try {
-      const res = await fetch(`${API_BASE}/api/skins`);
-      if (!res.ok) return;
-      const skins = await res.json();
-      skins.forEach(skin => {
-        const key = (skin.weapon + '|' + skin.name).toLowerCase();
-        if (skin.image_url) this.cache.set(key, skin.image_url);
-      });
-    } catch (e) { console.error('Failed to fetch skin images:', e); }
   }
 };
 
-// ==================== CONFIG ====================
-const API_BASE = window.location.origin;
-let currentUserId = null;
-let ws = null;
-let userData = null;
-
-// ==================== INIT ====================
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
 function init() {
-  console.log('🚀 ARZDROP Mini App starting...');
+  console.log('🚀 ARZDROP starting...');
   
-  // Получаем user_id из Telegram WebApp
   let userId = null;
   
-  // Пробуем получить из Telegram
   if (window.Telegram && window.Telegram.WebApp) {
     const tg = window.Telegram.WebApp;
     userId = tg.initDataUnsafe?.user?.id;
-    tg.expand(); // Разворачиваем на весь экран
-    console.log('📱 Telegram user ID:', userId);
+    tg.expand();
+    console.log('📱 Telegram user:', userId);
   }
   
-  // Если не в Telegram, пробуем из URL (для теста в браузере)
   if (!userId) {
     const params = new URLSearchParams(window.location.search);
     userId = params.get('user_id');
-    console.log('🔗 URL user_id:', userId);
   }
   
-  // Если всё ещё нет - пробуем из localStorage
   if (!userId) {
     userId = localStorage.getItem('arzdrop_user_id');
-    console.log('💾 localStorage user_id:', userId);
   }
   
-  // Если нет user_id - показываем ошибку
   if (!userId) {
-    showToast('❌ Ошибка: не удалось получить ID пользователя. Запустите в Telegram.', 'error');
+    showToast('❌ Ошибка: пользователь не найден', 'error');
     document.getElementById('balanceValue').textContent = '❌';
-    document.querySelectorAll('.loading-spinner').forEach(el => el.remove());
     return;
   }
   
   currentUserId = userId;
+  isAdmin = (parseInt(currentUserId) === ADMIN_ID);
   localStorage.setItem('arzdrop_user_id', currentUserId);
-  console.log('✅ User ID set to:', currentUserId);
   
-  // Загружаем данные
-  SkinImageResolver.fetchSkinImagesFromDB();
+  console.log('✅ User ID:', currentUserId, isAdmin ? '👑 ADMIN' : '');
+  
+  if (isAdmin) addAdminTab();
+  
   connectWebSocket();
   loadUserData();
   loadCases();
@@ -1221,6 +1157,97 @@ function init() {
   loadTopClans();
   loadClans();
   loadProfile();
+  
+  setInterval(refreshBalance, 30000);
+}
+
+// ==================== АДМИН-ПАНЕЛЬ ====================
+function addAdminTab() {
+  const navTabs = document.getElementById('navTabs');
+  const adminTab = document.createElement('div');
+  adminTab.className = 'nav-tab admin-panel-btn';
+  adminTab.dataset.section = 'admin';
+  adminTab.innerHTML = '👑 Админ';
+  adminTab.onclick = () => showSection('admin');
+  navTabs.appendChild(adminTab);
+  
+  const mainContent = document.getElementById('mainContent');
+  const adminSection = document.createElement('div');
+  adminSection.className = 'section hidden';
+  adminSection.id = 'section-admin';
+  adminSection.innerHTML = `
+    <div class="card" style="border-color:rgba(238,90,36,0.3);">
+      <div class="card-title" style="color:#ff6b6b;">👑 Админ-панель</div>
+      
+      <div style="margin-bottom:16px;">
+        <h4 style="color:var(--text-secondary);margin-bottom:8px;">💰 Выдать монеты</h4>
+        <div class="promo-input-group">
+          <input type="number" class="promo-input" id="adminGiveId" placeholder="ID" style="text-transform:none;">
+          <input type="number" class="promo-input" id="adminGiveAmount" placeholder="Сумма" style="text-transform:none;">
+          <button class="btn-primary" style="width:auto;padding:12px 20px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);" onclick="adminGiveCoins()">Выдать</button>
+        </div>
+      </div>
+      
+      <div style="margin-bottom:16px;">
+        <h4 style="color:var(--text-secondary);margin-bottom:8px;">📤 Заявки на вывод</h4>
+        <button class="btn-primary" onclick="adminLoadWithdrawals()" style="margin-bottom:8px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);">Обновить</button>
+        <div id="adminWithdrawalsList"></div>
+      </div>
+    </div>
+  `;
+  mainContent.appendChild(adminSection);
+}
+
+async function adminGiveCoins() {
+  const targetId = document.getElementById('adminGiveId').value.trim();
+  const amount = document.getElementById('adminGiveAmount').value.trim();
+  
+  if (!targetId || !amount) {
+    showToast('Заполните все поля', 'error');
+    return;
+  }
+  
+  const result = await apiPost(`/api/admin/give?admin_id=${currentUserId}&user_id=${targetId}&amount=${amount}`, {});
+  if (result && result.success) {
+    showToast(`✅ Выдано ${amount} 🪙 пользователю ${targetId}`, 'success');
+    refreshBalance();
+  } else {
+    showToast(result?.detail || 'Ошибка', 'error');
+  }
+}
+
+async function adminLoadWithdrawals() {
+  const data = await apiGet(`/api/admin/withdrawals?admin_id=${currentUserId}`);
+  const list = document.getElementById('adminWithdrawalsList');
+  
+  if (!data || !data.withdrawals || data.withdrawals.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-secondary);">Нет заявок</p>';
+    return;
+  }
+  
+  list.innerHTML = data.withdrawals.map(w => `
+    <div class="friend-item" style="border-color:rgba(238,90,36,0.3);">
+      <div style="flex:1;">
+        <div style="font-weight:600;">#${w.id} - ${w.first_name}</div>
+        <div style="font-size:12px;color:var(--text-secondary);">${w.weapon} | ${w.name}</div>
+        <div style="font-size:11px;color:var(--neon-green);">${w.price_rub.toLocaleString('ru-RU')} 🪙</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-small btn-sell" onclick="adminProcessWithdraw(${w.id}, 'approve')">✅</button>
+        <button class="btn-small" style="background:rgba(255,68,68,0.1);color:#ff4444;border:1px solid #ff4444;" onclick="adminProcessWithdraw(${w.id}, 'reject')">❌</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function adminProcessWithdraw(requestId, action) {
+  const result = await apiPost(`/api/admin/withdraw/process?admin_id=${currentUserId}&request_id=${requestId}&action=${action}`, {});
+  if (result && result.success) {
+    showToast(`Заявка #${requestId} ${action === 'approve' ? 'одобрена' : 'отклонена'}`, 'success');
+    adminLoadWithdrawals();
+  } else {
+    showToast(result?.detail || 'Ошибка', 'error');
+  }
 }
 
 // ==================== WEBSOCKET ====================
@@ -1230,11 +1257,11 @@ function connectWebSocket() {
 
   try {
     ws = new WebSocket(wsUrl);
-    ws.onopen = () => console.log('🔌 WebSocket connected');
-    ws.onmessage = (event) => handleWebSocketMessage(JSON.parse(event.data));
-    ws.onclose = () => { console.log('🔌 WS disconnected, reconnecting...'); setTimeout(connectWebSocket, 3000); };
-    ws.onerror = (err) => console.error('🔌 WS error:', err);
-  } catch (e) { console.error('🔌 WS connection failed:', e); }
+    ws.onopen = () => console.log('🔌 WS connected');
+    ws.onmessage = (e) => handleWebSocketMessage(JSON.parse(e.data));
+    ws.onclose = () => { setTimeout(connectWebSocket, 3000); };
+    ws.onerror = (err) => console.error('WS error:', err);
+  } catch (e) { console.error('WS failed:', e); }
 }
 
 function handleWebSocketMessage(data) {
@@ -1247,7 +1274,7 @@ function handleWebSocketMessage(data) {
       updateBalanceDisplay(data.balance);
       break;
     case 'daily_claimed':
-      showToast(`+${data.reward} монет! Серия: ${data.streak} дней`, 'success');
+      showToast(`+${data.reward} 🪙! Серия: ${data.streak} дней`, 'success');
       updateBalanceDisplay(data.new_balance);
       loadDailyInfo();
       break;
@@ -1263,28 +1290,38 @@ async function apiGet(endpoint) {
     const res = await fetch(`${API_BASE}${endpoint}`);
     if (!res.ok) throw new Error(await res.text());
     return await res.json();
-  } catch (e) { console.error('API GET error:', e); return null; }
+  } catch (e) { console.error('GET error:', e); return null; }
 }
 
 async function apiPost(endpoint, body) {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
     });
     if (!res.ok) throw new Error(await res.text());
     return await res.json();
-  } catch (e) { console.error('API POST error:', e); return null; }
+  } catch (e) { console.error('POST error:', e); return null; }
 }
 
-// ==================== USER ====================
+// ==================== ПОЛЬЗОВАТЕЛЬ ====================
 async function loadUserData() {
   const data = await apiGet(`/api/user/${currentUserId}`);
   if (data) { userData = data; updateBalanceDisplay(data.balance); }
 }
 
+async function refreshBalance() {
+  const data = await apiGet(`/api/balance/${currentUserId}`);
+  if (data) updateBalanceDisplay(data.balance);
+}
+
 function updateBalanceDisplay(balance) {
   const el = document.getElementById('balanceValue');
-  if (el) animateNumber(el, parseInt(el.textContent.replace(/\s/g, '')) || 0, balance, 800);
+  if (el) {
+    const current = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+    animateNumber(el, current, balance, 600);
+  }
 }
 
 function animateNumber(el, from, to, duration) {
@@ -1298,15 +1335,15 @@ function animateNumber(el, from, to, duration) {
   requestAnimationFrame(update);
 }
 
-// ==================== CASES ====================
+// ==================== КЕЙСЫ (ЦЕНЫ ИЗ БОТА) ====================
 const CASES_DATA = [
-  { name: 'БОМЖ', price: 500, icon: '💼', desc: 'Базовый кейс для новичков' },
-  { name: 'DOLLAR', price: 1000, icon: '💵', desc: 'Кейс для тех, кто хочет больше' },
-  { name: 'TERRORIST', price: 1500, icon: '💣', desc: 'Кейс с редкими скинами' },
-  { name: 'NIKO COVAK', price: 2500, icon: '🎯', desc: 'Профессиональный кейс' },
-  { name: 'ZONT1X', price: 5000, icon: '🎪', desc: 'Элитный кейс' },
-  { name: 'DONK', price: 10000, icon: '👑', desc: 'Королевский кейс' },
-  { name: 'DENIS', price: 25000, icon: '💎', desc: 'Максимальный дроп' }
+  { name: 'БОМЖ', price: 500, icon: '💼' },
+  { name: 'DOLLAR', price: 1500, icon: '💵' },
+  { name: 'TERRORIST', price: 3000, icon: '💣' },
+  { name: 'NIKO COVAK', price: 10000, icon: '🎯' },
+  { name: 'ZONT1X', price: 100000, icon: '🎪' },
+  { name: 'DONK', price: 1000000, icon: '👑' },
+  { name: 'DENIS', price: 4000000, icon: '💎' }
 ];
 
 function loadCases() {
@@ -1315,16 +1352,17 @@ function loadCases() {
     <div class="case-card" onclick="openCase('${c.name}', ${c.price})">
       <div class="case-icon">${c.icon}</div>
       <div class="case-name">${c.name}</div>
-      <div class="case-price">${c.price.toLocaleString('ru-RU')} ₽</div>
+      <div class="case-price">${c.price.toLocaleString('ru-RU')} 🪙</div>
     </div>
   `).join('');
 }
 
 async function openCase(caseName, price) {
   if (!userData || userData.balance < price) {
-    showToast('Недостаточно монет!', 'error');
+    showToast('❌ Недостаточно монет!', 'error');
     return;
   }
+  
   showCaseRoulette(caseName);
 
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1336,7 +1374,7 @@ async function openCase(caseName, price) {
       updateBalanceDisplay(result.new_balance);
     } else {
       closeCaseOverlay();
-      showToast(result?.detail || 'Ошибка открытия кейса', 'error');
+      showToast(result?.detail || 'Ошибка', 'error');
     }
   }
 }
@@ -1349,7 +1387,6 @@ function showCaseRoulette(caseName) {
   overlay.classList.add('active');
   reveal.classList.remove('show');
 
-  const rarities = ['consumer', 'industrial', 'mil-spec', 'restricted', 'classified', 'covert', 'gold'];
   const weapons = ['AK-47', 'M4A4', 'AWP', 'Desert Eagle', 'USP-S', 'Glock-18', 'Knife'];
   const skins = ['Redline', 'Asiimov', 'Dragon Lore', 'Fade', 'Doppler', 'Crimson Web', 'Tiger Tooth'];
 
@@ -1357,12 +1394,9 @@ function showCaseRoulette(caseName) {
   for (let i = 0; i < 50; i++) {
     const w = weapons[Math.floor(Math.random() * weapons.length)];
     const s = skins[Math.floor(Math.random() * skins.length)];
-    const r = rarities[Math.floor(Math.random() * rarities.length)];
-    const imgHtml = SkinImageResolver.createSkinImage(w, s, r);
-    const fallbackHtml = SkinImageResolver.createSkinFallback(w, s, r);
     itemsHTML += `
-      <div class="roulette-item" data-rarity="${r}">
-        ${imgHtml}${fallbackHtml}
+      <div class="roulette-item">
+        <div style="font-size:40px;">🎯</div>
         <div style="font-size:10px;font-weight:600;margin-top:4px;">${w}</div>
         <div style="font-size:9px;color:var(--text-secondary);">${s}</div>
       </div>
@@ -1381,13 +1415,8 @@ function showCaseRoulette(caseName) {
 
 function showCaseResult(skin) {
   const reveal = document.getElementById('winnerReveal');
-  const nameEl = document.getElementById('winnerName');
-  const priceEl = document.getElementById('winnerPrice');
-
-  nameEl.textContent = `${skin.weapon} | ${skin.name}`;
-  nameEl.style.color = SkinImageResolver.getRarityColor(skin.rarity);
-  priceEl.textContent = `${skin.price_rub.toLocaleString('ru-RU')} ₽ ($${skin.price_usd})`;
-
+  document.getElementById('winnerName').textContent = `${skin.weapon} | ${skin.name}`;
+  document.getElementById('winnerPrice').textContent = `${skin.price_rub.toLocaleString('ru-RU')} 🪙`;
   reveal.classList.add('show');
   createParticles();
   loadInventory();
@@ -1397,7 +1426,7 @@ function closeCaseOverlay() {
   document.getElementById('caseOverlay').classList.remove('active');
 }
 
-// ==================== INVENTORY ====================
+// ==================== ИНВЕНТАРЬ ====================
 async function loadInventory() {
   const data = await apiGet(`/api/inventory/${currentUserId}`);
   const grid = document.getElementById('inventoryGrid');
@@ -1412,21 +1441,18 @@ async function loadInventory() {
   document.getElementById('invCount').textContent = data.total;
   document.getElementById('invValue').textContent = (data.value || 0).toLocaleString('ru-RU');
 
-  grid.innerHTML = data.items.map(item => {
-    const imgHtml = SkinImageResolver.createSkinImage(item.weapon, item.name, item.rarity);
-    const fallbackHtml = SkinImageResolver.createSkinFallback(item.weapon, item.name, item.rarity);
-    return `
+  grid.innerHTML = data.items.map(item => `
     <div class="skin-card">
       <div class="skin-rarity-bar" style="background:${SkinImageResolver.getRarityColor(item.rarity)}"></div>
-      ${imgHtml}${fallbackHtml}
+      <div class="skin-image-placeholder" style="font-size:40px;">🔫</div>
       <div class="skin-name">${item.name}</div>
       <div class="skin-weapon">${item.weapon}</div>
-      <div class="skin-price">${item.price_rub.toLocaleString('ru-RU')} ₽</div>
+      <div class="skin-price">${item.price_rub.toLocaleString('ru-RU')} 🪙</div>
       <div class="skin-actions">
         <button class="btn-small btn-sell" onclick="sellSkin(${item.inv_id})">Продать ${Math.round(item.price_rub * 0.95).toLocaleString('ru-RU')}</button>
       </div>
     </div>
-  `}).join('');
+  `).join('');
 }
 
 async function sellSkin(invId) {
@@ -1434,21 +1460,21 @@ async function sellSkin(invId) {
   if (result && result.success) {
     showToast(result.message, 'success');
     loadInventory();
-    loadUserData();
+    refreshBalance();
   } else {
-    showToast(result?.detail || 'Ошибка продажи', 'error');
+    showToast(result?.detail || 'Ошибка', 'error');
   }
 }
 
-// ==================== DAILY ====================
+// ==================== ЕЖЕДНЕВКА ====================
 async function loadDailyInfo() {
   const data = await apiGet(`/api/daily/${currentUserId}`);
   if (data) {
     document.getElementById('dailyStreak').textContent = data.streak || 0;
-    document.getElementById('dailyReward').textContent = `+${data.next_reward || 50} монет`;
+    document.getElementById('dailyReward').textContent = `+${data.next_reward || 50} 🪙`;
     const btn = document.getElementById('claimDailyBtn');
     btn.disabled = !data.can_claim;
-    btn.textContent = data.can_claim ? 'Забрать награду' : 'Уже получено';
+    btn.textContent = data.can_claim ? 'Забрать награду' : '✅ Уже получено';
   }
 }
 
@@ -1458,7 +1484,7 @@ async function claimDaily() {
   } else {
     const result = await apiPost('/api/daily/claim', { user_id: parseInt(currentUserId) });
     if (result && result.success) {
-      showToast(`+${result.reward} монет!`, 'success');
+      showToast(`+${result.reward} 🪙!`, 'success');
       updateBalanceDisplay(result.new_balance);
       loadDailyInfo();
     } else {
@@ -1476,7 +1502,7 @@ async function usePromo() {
     if (result.success) {
       showToast(result.message, 'success');
       updateBalanceDisplay(result.new_balance);
-      loadUserData();
+      refreshBalance();
     } else {
       showToast(result.message, 'error');
     }
@@ -1484,7 +1510,7 @@ async function usePromo() {
   document.getElementById('promoInput').value = '';
 }
 
-// ==================== TOP ====================
+// ==================== ТОП ====================
 async function loadTopPlayers() {
   const data = await apiGet('/api/top?limit=10');
   const list = document.getElementById('topPlayersList');
@@ -1503,7 +1529,7 @@ async function loadTopPlayers() {
           <div class="top-name">${u.first_name || 'User'}</div>
           ${u.tag ? `<div class="top-tag">[${u.tag}]</div>` : ''}
         </div>
-        <div class="top-balance">${u.balance.toLocaleString('ru-RU')} ₽</div>
+        <div class="top-balance">${u.balance.toLocaleString('ru-RU')} 🪙</div>
       </div>
     `;
   }).join('');
@@ -1527,13 +1553,13 @@ async function loadTopClans() {
           <div class="top-name">${c.name}</div>
           <div class="top-tag">[${c.tag}]</div>
         </div>
-        <div class="top-balance">${Math.round(c.avg_balance).toLocaleString('ru-RU')} ₽</div>
+        <div class="top-balance">${Math.round(c.avg_balance).toLocaleString('ru-RU')} 🪙</div>
       </div>
     `;
   }).join('');
 }
 
-// ==================== CLANS ====================
+// ==================== КЛАНЫ ====================
 async function loadClans() {
   const myClan = await apiGet(`/api/clan/${currentUserId}`);
   const myClanEl = document.getElementById('myClanInfo');
@@ -1582,19 +1608,22 @@ async function createClan() {
   }
 
   const result = await apiPost('/api/clan/create', {
-    user_id: parseInt(currentUserId), name: name, tag: tag
+    user_id: parseInt(currentUserId),
+    name: name,
+    tag: tag
   });
 
   if (result && result.success) {
     showToast('Клан создан!', 'success');
     closeModal('createClanModal');
     loadClans();
+    refreshBalance();
   } else {
-    showToast(result?.message || 'Ошибка создания клана', 'error');
+    showToast(result?.message || 'Ошибка', 'error');
   }
 }
 
-// ==================== PROFILE ====================
+// ==================== ПРОФИЛЬ ====================
 async function loadProfile() {
   const data = await apiGet(`/api/user/${currentUserId}`);
   if (!data) return;
@@ -1622,8 +1651,7 @@ async function loadProfile() {
 
 function getXpForLevel(level) {
   const levels = { 1: 0, 2: 250, 3: 500, 4: 1000, 5: 2830, 6: 4000, 7: 5500, 8: 7500, 9: 10000, 10: 13912 };
-  if (levels[level]) return levels[level];
-  return Math.floor(50 * Math.pow(level, 2.8));
+  return levels[level] || Math.floor(50 * Math.pow(level, 2.8));
 }
 
 async function linkSteam() {
@@ -1635,7 +1663,7 @@ async function linkSteam() {
     showToast('Steam привязан!', 'success');
     loadProfile();
   } else {
-    showToast(result?.detail || 'Ошибка привязки Steam', 'error');
+    showToast(result?.detail || 'Ошибка', 'error');
   }
 }
 
@@ -1647,17 +1675,25 @@ async function unlinkSteam() {
   }
 }
 
-// ==================== NAVIGATION ====================
+// ==================== НАВИГАЦИЯ ====================
 function showSection(sectionName) {
   document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`section-${sectionName}`).classList.remove('hidden');
+  const target = document.getElementById(`section-${sectionName}`);
+  if (target) target.classList.remove('hidden');
+  
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+  const tab = document.querySelector(`[data-section="${sectionName}"]`);
+  if (tab) tab.classList.add('active');
 
-  if (sectionName === 'inventory') loadInventory();
-  if (sectionName === 'top') { loadTopPlayers(); loadTopClans(); }
-  if (sectionName === 'clans') loadClans();
-  if (sectionName === 'profile') loadProfile();
+  refreshBalance();
+
+  switch(sectionName) {
+    case 'inventory': loadInventory(); break;
+    case 'top': loadTopPlayers(); loadTopClans(); break;
+    case 'clans': loadClans(); break;
+    case 'profile': loadProfile(); break;
+    case 'admin': if (isAdmin) adminLoadWithdrawals(); break;
+  }
 }
 
 // ==================== TOASTS ====================
@@ -1680,23 +1716,18 @@ function createParticles() {
     const ty = (Math.random() - 0.5) * 400;
     p.style.cssText = `
       width: ${size}px; height: ${size}px;
-      background: ${Math.random() > 0.5 ? 'var(--neon-green)' : '#fff'};
+      background: ${Math.random() > 0.5 ? '#00ff41' : '#fff'};
       left: 50%; top: 50%;
       --tx: ${tx}px; --ty: ${ty}px;
-      box-shadow: 0 0 ${size * 2}px var(--neon-green-glow);
+      box-shadow: 0 0 ${size * 2}px rgba(0,255,65,0.4);
     `;
     document.body.appendChild(p);
     setTimeout(() => p.remove(), 1000);
   }
 }
 
-// ==================== START ====================
+// ==================== СТАРТ ====================
 document.addEventListener('DOMContentLoaded', init);
-
-// Для отладки в консоли
-console.log('🎯 ARZDROP loaded. Use:');
-console.log('- currentUserId =', currentUserId);
-console.log('- API_BASE =', API_BASE);
 </script>
 </body>
 </html>
