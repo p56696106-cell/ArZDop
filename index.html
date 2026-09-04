@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ARZDROP — Неоновый кейс-опенинг</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap');
 
@@ -1171,15 +1172,45 @@ let userData = null;
 
 // ==================== INIT ====================
 function init() {
-  const params = new URLSearchParams(window.location.search);
-  currentUserId = params.get('user_id') || localStorage.getItem('arzdrop_user_id');
-
-  if (!currentUserId) {
-    showToast('Ошибка: user_id не найден', 'error');
+  console.log('🚀 ARZDROP Mini App starting...');
+  
+  // Получаем user_id из Telegram WebApp
+  let userId = null;
+  
+  // Пробуем получить из Telegram
+  if (window.Telegram && window.Telegram.WebApp) {
+    const tg = window.Telegram.WebApp;
+    userId = tg.initDataUnsafe?.user?.id;
+    tg.expand(); // Разворачиваем на весь экран
+    console.log('📱 Telegram user ID:', userId);
+  }
+  
+  // Если не в Telegram, пробуем из URL (для теста в браузере)
+  if (!userId) {
+    const params = new URLSearchParams(window.location.search);
+    userId = params.get('user_id');
+    console.log('🔗 URL user_id:', userId);
+  }
+  
+  // Если всё ещё нет - пробуем из localStorage
+  if (!userId) {
+    userId = localStorage.getItem('arzdrop_user_id');
+    console.log('💾 localStorage user_id:', userId);
+  }
+  
+  // Если нет user_id - показываем ошибку
+  if (!userId) {
+    showToast('❌ Ошибка: не удалось получить ID пользователя. Запустите в Telegram.', 'error');
+    document.getElementById('balanceValue').textContent = '❌';
+    document.querySelectorAll('.loading-spinner').forEach(el => el.remove());
     return;
   }
-
+  
+  currentUserId = userId;
   localStorage.setItem('arzdrop_user_id', currentUserId);
+  console.log('✅ User ID set to:', currentUserId);
+  
+  // Загружаем данные
   SkinImageResolver.fetchSkinImagesFromDB();
   connectWebSocket();
   loadUserData();
@@ -1199,11 +1230,11 @@ function connectWebSocket() {
 
   try {
     ws = new WebSocket(wsUrl);
-    ws.onopen = () => console.log('WebSocket connected');
+    ws.onopen = () => console.log('🔌 WebSocket connected');
     ws.onmessage = (event) => handleWebSocketMessage(JSON.parse(event.data));
-    ws.onclose = () => { console.log('WS disconnected, reconnecting...'); setTimeout(connectWebSocket, 3000); };
-    ws.onerror = (err) => console.error('WS error:', err);
-  } catch (e) { console.error('WS connection failed:', e); }
+    ws.onclose = () => { console.log('🔌 WS disconnected, reconnecting...'); setTimeout(connectWebSocket, 3000); };
+    ws.onerror = (err) => console.error('🔌 WS error:', err);
+  } catch (e) { console.error('🔌 WS connection failed:', e); }
 }
 
 function handleWebSocketMessage(data) {
@@ -1661,6 +1692,11 @@ function createParticles() {
 
 // ==================== START ====================
 document.addEventListener('DOMContentLoaded', init);
+
+// Для отладки в консоли
+console.log('🎯 ARZDROP loaded. Use:');
+console.log('- currentUserId =', currentUserId);
+console.log('- API_BASE =', API_BASE);
 </script>
 </body>
-  </html>
+</html>
