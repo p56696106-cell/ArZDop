@@ -1802,6 +1802,24 @@ async def unlink_steam_endpoint(user_id: int):
         raise HTTPException(status_code=400, detail="Steam not linked or not found")
     
     return {"success": True, "message": "Steam отвязан"}
+# ... весь ваш код с эндпоинтами API ...
+
+# ==================== ОТДАЧА ФРОНТА ====================
+
+@app.get("/")
+async def serve_index():
+    """Главная страница Mini App"""
+    return FileResponse("index.html")
+
+# Для любого другого пути - тоже index.html (SPA)
+@app.get("/{path:path}")
+async def serve_spa(path: str):
+    """Все пути ведут на index.html"""
+    # Если запрашивают существующий файл (картинка, и т.д.)
+    if os.path.exists(path):
+        return FileResponse(path)
+    # Иначе отдаём index.html
+    return FileResponse("index.html")
 
 # ==================== ЗАПУСК ====================
 if __name__ == "__main__":
