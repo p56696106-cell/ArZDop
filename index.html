@@ -27,6 +27,7 @@
   --red: #ff4466;
   --gold: #ffd700;
   --admin: #ff6b35;
+  --purple: #8847ff;
 }
 
 body {
@@ -227,7 +228,7 @@ body {
   color: var(--green);
   margin: 4px 0;
 }
-.inv-actions { display: flex; gap: 6px; margin-top: 6px; }
+.inv-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .inv-actions button {
   flex: 1;
   padding: 4px 6px;
@@ -237,6 +238,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: 0.2s;
+  min-width: 45px;
 }
 .btn-sell {
   background: rgba(0, 255, 136, 0.1);
@@ -250,6 +252,12 @@ body {
   border: 1px solid rgba(100, 100, 255, 0.2);
 }
 .btn-withdraw:hover { background: rgba(100, 100, 255, 0.2); }
+.btn-upgrade {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.btn-upgrade:hover { background: rgba(255, 215, 0, 0.2); }
 
 /* ===== КНОПКИ ===== */
 .btn {
@@ -281,6 +289,7 @@ body {
 .btn-sm:hover { background: var(--card-hover); }
 .btn-sm.green { background: var(--green); color: #000; }
 .btn-sm.admin { background: var(--admin); color: #fff; }
+.btn-sm.gold { background: var(--gold); color: #000; }
 
 /* ===== ДЕЙЛИК ===== */
 .daily-box {
@@ -429,7 +438,7 @@ body {
 /* ===== АДМИН ===== */
 .admin-panel .card { border-color: rgba(255, 107, 53, 0.2); }
 .admin-panel .card-title { color: var(--admin); }
-.admin-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.admin-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 .admin-row input {
   flex: 1;
   padding: 8px 12px;
@@ -439,6 +448,7 @@ body {
   color: var(--text);
   font-size: 13px;
   outline: none;
+  min-width: 80px;
 }
 .admin-row input:focus { border-color: var(--admin); }
 .admin-row .btn-sm { background: var(--admin); color: #fff; }
@@ -468,6 +478,39 @@ body {
 }
 .withdraw-actions .approve { background: var(--green); color: #000; }
 .withdraw-actions .reject { background: var(--red); color: #fff; }
+
+.admin-section-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+.admin-section-title:first-child { margin-top: 0; }
+
+/* ===== АПГРЕЙД ===== */
+.upgrade-box {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.01));
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+}
+.upgrade-chance {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--gold);
+  text-align: center;
+}
+.upgrade-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 8px 0;
+}
+.upgrade-info .in { color: var(--text); }
+.upgrade-info .out { color: var(--green); }
 
 /* ===== ТОСТЫ ===== */
 .toasts {
@@ -566,7 +609,7 @@ body {
 .winner-name { font-size: 24px; font-weight: 900; }
 .winner-price { font-size: 18px; color: var(--green); margin-top: 4px; }
 
-/* ===== МОДАЛКА ===== */
+/* ===== МОДАЛКИ ===== */
 .modal {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -585,10 +628,12 @@ body {
   border-radius: 20px;
   padding: 24px;
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .modal-title { font-weight: 700; font-size: 18px; color: var(--green); margin-bottom: 16px; }
-.modal-box input {
+.modal-box input, .modal-box select {
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
@@ -599,9 +644,24 @@ body {
   margin-bottom: 10px;
   outline: none;
 }
-.modal-box input:focus { border-color: var(--green); }
+.modal-box input:focus, .modal-box select:focus { border-color: var(--green); }
 .modal-box .btn { margin-bottom: 6px; }
 .modal-box .btn.cancel { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+
+.upgrade-target {
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.upgrade-target:hover { border-color: var(--gold); }
+.upgrade-target .chance { color: var(--gold); font-weight: 700; }
 
 /* ===== ОБЩЕЕ ===== */
 .empty { color: var(--text-dim); text-align: center; padding: 24px; }
@@ -726,6 +786,10 @@ body {
         </div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-title">📊 Донатер</div>
+      <div id="donatorInfo"><div class="empty">Загрузка...</div></div>
+    </div>
   </div>
 
 </div>
@@ -755,6 +819,17 @@ body {
   </div>
 </div>
 
+<!-- ===== МОДАЛКА АПГРЕЙДА ===== -->
+<div class="modal" id="upgradeModal">
+  <div class="modal-box">
+    <div class="modal-title">🔄 Апгрейд скина</div>
+    <div id="upgradeContent">
+      <div class="text-dim text-center" style="padding:20px;">Загрузка...</div>
+    </div>
+    <button class="btn cancel" onclick="closeModal('upgradeModal')">Закрыть</button>
+  </div>
+</div>
+
 <!-- ===== ТОСТЫ ===== -->
 <div class="toasts" id="toasts"></div>
 
@@ -767,6 +842,7 @@ let USER_ID = null;
 let USER_DATA = null;
 let WS = null;
 let IS_ADMIN = false;
+let UPGRADE_STATE = { step: 'select_in', in_inv_id: null, in_skin_id: null, in_price: 0 };
 
 // ==================== ИНИТ ====================
 function init() {
@@ -825,48 +901,121 @@ function addAdminTab() {
     <div class="card admin-panel">
       <div class="card-title">👑 Админ-панель</div>
 
-      <div class="mb-8">
-        <div style="font-weight:600;font-size:13px;color:var(--text-dim);margin-bottom:6px;">💰 Выдать монеты</div>
-        <div class="admin-row">
-          <input id="adminGiveId" placeholder="ID">
-          <input id="adminGiveAmount" placeholder="Сумма">
-          <button class="btn-sm admin" onclick="adminGive()">Выдать</button>
-        </div>
+      <div class="admin-section-title">💰 Выдать монеты</div>
+      <div class="admin-row">
+        <input id="adminGiveId" placeholder="ID">
+        <input id="adminGiveAmount" placeholder="Сумма">
+        <button class="btn-sm admin" onclick="adminGive()">Выдать</button>
       </div>
 
-      <div>
-        <div style="font-weight:600;font-size:13px;color:var(--text-dim);margin-bottom:6px;">📤 Заявки на вывод</div>
-        <button class="btn-sm admin" onclick="adminWithdrawals()" style="margin-bottom:8px;">Обновить</button>
-        <div id="adminWithdrawals"><div class="empty">Нет заявок</div></div>
+      <div class="admin-section-title">💳 Пополнение (рубли → монеты)</div>
+      <div class="admin-row">
+        <input id="adminDepositId" placeholder="ID">
+        <input id="adminDepositAmount" placeholder="Сумма ₽">
+        <button class="btn-sm admin" onclick="adminDeposit()">Пополнить</button>
+      </div>
+
+      <div class="admin-section-title">👑 Назначить админа</div>
+      <div class="admin-row">
+        <input id="adminToggleId" placeholder="ID">
+        <button class="btn-sm admin" onclick="adminToggle()">Toggle</button>
+      </div>
+
+      <div class="admin-section-title">📤 Заявки на вывод</div>
+      <button class="btn-sm admin" onclick="adminWithdrawals()" style="margin-bottom:8px;">Обновить</button>
+      <div id="adminWithdrawals"><div class="empty">Нет заявок</div></div>
+
+      <div class="admin-section-title">🔨 Бан/Разбан</div>
+      <div class="admin-row">
+        <input id="adminBanId" placeholder="ID">
+        <input id="adminBanReason" placeholder="Причина">
+        <button class="btn-sm admin" onclick="adminBan()">Забанить</button>
+        <button class="btn-sm" style="background:var(--green);color:#000;" onclick="adminUnban()">Разбанить</button>
+      </div>
+
+      <div class="admin-section-title">📢 Рассылка</div>
+      <div class="admin-row">
+        <input id="adminMailAll" placeholder="Текст рассылки">
+        <button class="btn-sm admin" onclick="adminMailAll()">Всем</button>
+      </div>
+      <div class="admin-row">
+        <input id="adminMailId" placeholder="ID">
+        <input id="adminMailText" placeholder="Текст">
+        <button class="btn-sm admin" onclick="adminMail()">Отправить</button>
+      </div>
+
+      <div class="admin-section-title">🎫 Промокоды</div>
+      <div class="admin-row">
+        <input id="adminPromoCode" placeholder="Код">
+        <input id="adminPromoReward" placeholder="Награда">
+        <input id="adminPromoLimit" placeholder="Лимит">
+        <input id="adminPromoDays" placeholder="Дней">
+        <select id="adminPromoCategory" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+          <option value="coins">Монеты</option>
+          <option value="cases">Кейс</option>
+        </select>
+        <button class="btn-sm admin" onclick="adminCreatePromo()">Создать</button>
+      </div>
+      <div class="admin-row">
+        <input id="adminDeletePromo" placeholder="Код">
+        <button class="btn-sm admin" onclick="adminDeletePromo()">Удалить</button>
+        <button class="btn-sm" onclick="adminListPromos()">Список</button>
+      </div>
+      <div id="adminPromoList"></div>
+
+      <div class="admin-section-title">📊 Список пользователей</div>
+      <button class="btn-sm admin" onclick="adminUsers()">Показать</button>
+      <div id="adminUsersList"></div>
+
+      <div class="admin-section-title">🏷 Кланы</div>
+      <button class="btn-sm admin" onclick="adminClans()">Список кланов</button>
+      <div class="admin-row" style="margin-top:6px;">
+        <input id="adminDeleteClan" placeholder="ID клана">
+        <button class="btn-sm admin" onclick="adminDeleteClan()">Удалить клан</button>
+      </div>
+      <div id="adminClansList"></div>
+
+      <div class="admin-section-title">🔗 Отвязать Steam</div>
+      <div class="admin-row">
+        <input id="adminUnlinkSteam" placeholder="ID">
+        <button class="btn-sm admin" onclick="adminUnlinkSteam()">Отвязать</button>
       </div>
     </div>
   `;
   content.appendChild(section);
 }
 
+// Админ-функции
 async function adminGive() {
   const id = document.getElementById('adminGiveId').value.trim();
   const amount = document.getElementById('adminGiveAmount').value.trim();
   if (!id || !amount) return toast('Заполните поля', 'error');
-
   const res = await apiPost(`/api/admin/give?admin_id=${USER_ID}&user_id=${id}&amount=${amount}`, {});
-  if (res?.success) {
-    toast(`✅ Выдано ${amount} 🪙 пользователю ${id}`, 'success');
-    refreshBalance();
-  } else {
-    toast(res?.detail || 'Ошибка', 'error');
-  }
+  if (res?.success) { toast(`✅ Выдано ${amount} 🪙 пользователю ${id}`, 'success'); refreshBalance(); }
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminDeposit() {
+  const id = document.getElementById('adminDepositId').value.trim();
+  const amount = document.getElementById('adminDepositAmount').value.trim();
+  if (!id || !amount) return toast('Заполните поля', 'error');
+  const res = await apiPost(`/api/admin/deposit?admin_id=${USER_ID}&user_id=${id}&rub=${amount}`, {});
+  if (res?.success) toast(`✅ Пополнено ${amount}₽ пользователю ${id}`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminToggle() {
+  const id = document.getElementById('adminToggleId').value.trim();
+  if (!id) return toast('Введите ID', 'error');
+  const res = await apiPost(`/api/admin/toggle?admin_id=${USER_ID}&user_id=${id}`, {});
+  if (res?.success) toast(res.message, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
 }
 
 async function adminWithdrawals() {
   const res = await apiGet(`/api/admin/withdrawals?admin_id=${USER_ID}`);
   const el = document.getElementById('adminWithdrawals');
-
-  if (!res?.withdrawals?.length) {
-    el.innerHTML = '<div class="empty">Нет заявок</div>';
-    return;
-  }
-
+  if (!res?.withdrawals?.length) { el.innerHTML = '<div class="empty">Нет заявок</div>'; return; }
   el.innerHTML = res.withdrawals.map(w => `
     <div class="withdraw-item">
       <div class="withdraw-info">
@@ -884,12 +1033,121 @@ async function adminWithdrawals() {
 
 async function adminProcess(id, action) {
   const res = await apiPost(`/api/admin/withdraw/process?admin_id=${USER_ID}&request_id=${id}&action=${action}`, {});
-  if (res?.success) {
-    toast(`Заявка #${id} ${action === 'approve' ? 'одобрена' : 'отклонена'}`, 'success');
-    adminWithdrawals();
-  } else {
-    toast(res?.detail || 'Ошибка', 'error');
-  }
+  if (res?.success) { toast(`Заявка #${id} ${action === 'approve' ? 'одобрена' : 'отклонена'}`, 'success'); adminWithdrawals(); }
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminBan() {
+  const id = document.getElementById('adminBanId').value.trim();
+  const reason = document.getElementById('adminBanReason').value.trim() || 'Нарушение правил';
+  if (!id) return toast('Введите ID', 'error');
+  const res = await apiPost(`/api/admin/ban?admin_id=${USER_ID}&user_id=${id}&reason=${reason}`, {});
+  if (res?.success) toast(`✅ Пользователь ${id} забанен`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminUnban() {
+  const id = document.getElementById('adminBanId').value.trim();
+  if (!id) return toast('Введите ID', 'error');
+  const res = await apiPost(`/api/admin/unban?admin_id=${USER_ID}&user_id=${id}`, {});
+  if (res?.success) toast(`✅ Пользователь ${id} разбанен`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminMailAll() {
+  const text = document.getElementById('adminMailAll').value.trim();
+  if (!text) return toast('Введите текст', 'error');
+  const res = await apiPost(`/api/admin/mail_all?admin_id=${USER_ID}&text=${text}`, {});
+  if (res?.success) toast(`✅ Рассылка отправлена ${res.count} пользователям`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminMail() {
+  const id = document.getElementById('adminMailId').value.trim();
+  const text = document.getElementById('adminMailText').value.trim();
+  if (!id || !text) return toast('Заполните поля', 'error');
+  const res = await apiPost(`/api/admin/mail?admin_id=${USER_ID}&user_id=${id}&text=${text}`, {});
+  if (res?.success) toast('✅ Сообщение отправлено', 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminCreatePromo() {
+  const code = document.getElementById('adminPromoCode').value.trim().toUpperCase();
+  const reward = document.getElementById('adminPromoReward').value.trim();
+  const limit = document.getElementById('adminPromoLimit').value.trim();
+  const days = document.getElementById('adminPromoDays').value.trim();
+  const category = document.getElementById('adminPromoCategory').value;
+  if (!code || !reward || !limit || !days) return toast('Заполните все поля', 'error');
+  const res = await apiPost(`/api/admin/create_promo?admin_id=${USER_ID}&code=${code}&reward=${reward}&limit=${limit}&days=${days}&category=${category}`, {});
+  if (res?.success) toast(`✅ Промокод ${code} создан`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminDeletePromo() {
+  const code = document.getElementById('adminDeletePromo').value.trim().toUpperCase();
+  if (!code) return toast('Введите код', 'error');
+  const res = await apiPost(`/api/admin/delete_promo?admin_id=${USER_ID}&code=${code}`, {});
+  if (res?.success) toast(`✅ Промокод ${code} удалён`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminListPromos() {
+  const res = await apiGet(`/api/admin/promos?admin_id=${USER_ID}`);
+  const el = document.getElementById('adminPromoList');
+  if (!res?.promos?.length) { el.innerHTML = '<div class="empty">Нет промокодов</div>'; return; }
+  el.innerHTML = res.promos.map(p => `
+    <div class="withdraw-item" style="border-color:var(--green);">
+      <div class="withdraw-info">
+        <div class="withdraw-name">${p.code}</div>
+        <div class="withdraw-skin">${p.reward} 🪙 | ${p.category} | ${p.used_count}/${p.uses_limit}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function adminUsers() {
+  const res = await apiGet(`/api/admin/users?admin_id=${USER_ID}`);
+  const el = document.getElementById('adminUsersList');
+  if (!res?.users?.length) { el.innerHTML = '<div class="empty">Нет пользователей</div>'; return; }
+  el.innerHTML = res.users.slice(0, 20).map(u => `
+    <div class="withdraw-item" style="border-color:var(--border);">
+      <div class="withdraw-info">
+        <div class="withdraw-name">${u.first_name || 'User'} (${u.id})</div>
+        <div class="withdraw-skin">💰 ${u.balance} 🪙 | Ур ${u.level} | ${u.is_admin ? '👑 Админ' : ''}</div>
+      </div>
+    </div>
+  `).join('');
+  if (res.users.length > 20) el.innerHTML += `<div class="text-dim text-center">... и ещё ${res.users.length - 20}</div>`;
+}
+
+async function adminClans() {
+  const res = await apiGet(`/api/admin/clans?admin_id=${USER_ID}`);
+  const el = document.getElementById('adminClansList');
+  if (!res?.clans?.length) { el.innerHTML = '<div class="empty">Нет кланов</div>'; return; }
+  el.innerHTML = res.clans.map(c => `
+    <div class="withdraw-item" style="border-color:var(--border);">
+      <div class="withdraw-info">
+        <div class="withdraw-name">[${c.tag}] ${c.name}</div>
+        <div class="withdraw-skin">👥 ${c.members_count}/${c.max_members}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function adminDeleteClan() {
+  const id = document.getElementById('adminDeleteClan').value.trim();
+  if (!id) return toast('Введите ID клана', 'error');
+  const res = await apiPost(`/api/admin/delete_clan?admin_id=${USER_ID}&clan_id=${id}`, {});
+  if (res?.success) toast('✅ Клан удалён', 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
+}
+
+async function adminUnlinkSteam() {
+  const id = document.getElementById('adminUnlinkSteam').value.trim();
+  if (!id) return toast('Введите ID', 'error');
+  const res = await apiPost(`/api/admin/unlink_steam?admin_id=${USER_ID}&user_id=${id}`, {});
+  if (res?.success) toast(`✅ Steam отвязан у ${id}`, 'success');
+  else toast(res?.detail || 'Ошибка', 'error');
 }
 
 // ==================== WEBSOCKET ====================
@@ -1001,6 +1259,7 @@ async function openCase(name, price) {
     if (res?.success) {
       setTimeout(() => showCaseResult(res.skin), 4000);
       updateBalance(res.new_balance);
+      if (res.level_up?.occurred) toast(`🎉 Повышение уровня! ${res.level_up.new_level}`, 'success');
     } else {
       closeCase();
       toast(res?.detail || 'Ошибка', 'error');
@@ -1065,18 +1324,22 @@ async function loadInventory() {
   document.getElementById('invCount').textContent = res.total;
   document.getElementById('invValue').textContent = (res.value || 0).toLocaleString('ru-RU');
 
-  grid.innerHTML = res.items.map(s => `
+  grid.innerHTML = res.items.map(s => {
+    const price = s.price_rub;
+    return `
     <div class="inv-item">
       <div class="inv-rarity" style="background:${getRarityColor(s.rarity)}"></div>
       <div class="inv-icon">🔫</div>
       <div class="inv-name">${s.name}</div>
       <div class="inv-weapon">${s.weapon}</div>
-      <div class="inv-price">${s.price_rub.toLocaleString('ru-RU')} 🪙</div>
+      <div class="inv-price">${price.toLocaleString('ru-RU')} 🪙</div>
       <div class="inv-actions">
-        <button class="btn-sell" onclick="sellSkin(${s.inv_id})">Продать</button>
+        <button class="btn-sell" onclick="sellSkin(${s.inv_id})">💰</button>
+        ${price >= 1000 ? `<button class="btn-upgrade" onclick="openUpgrade(${s.inv_id})">🔄</button>` : ''}
+        <button class="btn-withdraw" onclick="withdrawSkin(${s.inv_id})">📤</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function getRarityColor(r) {
@@ -1096,6 +1359,120 @@ async function sellSkin(id) {
   }
 }
 
+async function withdrawSkin(id) {
+  const res = await apiGet(`/api/inventory/item/${id}?user_id=${USER_ID}`);
+  if (!res) return toast('Скин не найден', 'error');
+  
+  const can = await apiGet(`/api/withdraw/check?user_id=${USER_ID}`);
+  if (!can?.can) return toast(can?.message || 'Вывод недоступен', 'error');
+  
+  if (!USER_DATA?.steam_url) return toast('❌ Сначала привяжите Steam в профиле', 'error');
+  
+  const result = await apiPost('/api/withdraw/request', {
+    user_id: Number(USER_ID),
+    inventory_id: id,
+    skin_id: res.skin_id,
+    steam_url: USER_DATA.steam_url
+  });
+  
+  if (result?.success) {
+    toast(`✅ Заявка #${result.request_id} отправлена`, 'success');
+    loadInventory();
+  } else {
+    toast(result?.detail || 'Ошибка', 'error');
+  }
+}
+
+// ==================== АПГРЕЙД ====================
+async function openUpgrade(invId) {
+  // Получаем скин
+  const res = await apiGet(`/api/inventory/item/${invId}?user_id=${USER_ID}`);
+  if (!res) return toast('Скин не найден', 'error');
+  
+  UPGRADE_STATE.in_inv_id = invId;
+  UPGRADE_STATE.in_skin_id = res.skin_id;
+  UPGRADE_STATE.in_price = res.price_rub;
+  UPGRADE_STATE.step = 'select_out';
+  
+  // Получаем доступные цели
+  const targets = await apiGet(`/api/upgrade/targets?price=${res.price_rub}`);
+  
+  const modal = document.getElementById('upgradeModal');
+  const content = document.getElementById('upgradeContent');
+  
+  if (!targets?.length) {
+    content.innerHTML = `
+      <div class="text-dim text-center" style="padding:20px;">
+        ❌ Нет доступных целей для апгрейда<br>
+        <span style="font-size:12px;">Цель должна быть дороже входа, но не более чем в 8 раз</span>
+      </div>
+    `;
+    modal.classList.add('active');
+    return;
+  }
+  
+  content.innerHTML = `
+    <div class="upgrade-box">
+      <div style="text-align:center;margin-bottom:12px;">
+        <div class="text-dim">Вход</div>
+        <div style="font-weight:700;font-size:16px;">${res.weapon} | ${res.name}</div>
+        <div style="color:var(--green);font-weight:600;">${res.price_rub.toLocaleString('ru-RU')} 🪙</div>
+      </div>
+      <div class="text-dim" style="font-size:13px;margin-bottom:8px;">Выберите цель:</div>
+      ${targets.map(t => {
+        const chance = Math.max(0.001, Math.min(75, (res.price_rub / t.price_rub) * 0.9 * 100));
+        return `
+          <div class="upgrade-target" onclick="doUpgrade(${t.id})">
+            <div>
+              <div style="font-weight:600;">${t.weapon} | ${t.name}</div>
+              <div style="font-size:12px;color:var(--text-dim);">${t.price_rub.toLocaleString('ru-RU')} 🪙</div>
+            </div>
+            <div class="chance">${chance.toFixed(2)}%</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  
+  modal.classList.add('active');
+}
+
+async function doUpgrade(outSkinId) {
+  const modal = document.getElementById('upgradeModal');
+  const content = document.getElementById('upgradeContent');
+  
+  content.innerHTML = `
+    <div class="upgrade-box">
+      <div class="text-center" style="padding:20px;">
+        <div class="loading-spinner" style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>
+        <div style="color:var(--text-dim);">🔄 Смешиваем скины...</div>
+      </div>
+    </div>
+  `;
+  
+  // Имитация анимации
+  await sleep(1500);
+  
+  const res = await apiPost('/api/upgrade/do', {
+    user_id: Number(USER_ID),
+    in_inv_id: UPGRADE_STATE.in_inv_id,
+    out_skin_id: outSkinId
+  });
+  
+  if (res?.success) {
+    toast(res.message, 'success');
+    if (res.level_up?.occurred) toast(`🎉 Повышение уровня! ${res.level_up.new_level}`, 'success');
+    loadInventory();
+    refreshBalance();
+    closeModal('upgradeModal');
+  } else {
+    toast(res?.detail || 'Ошибка апгрейда', 'error');
+    closeModal('upgradeModal');
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 // ==================== ЕЖЕДНЕВКА ====================
 async function loadDaily() {
   const res = await apiGet(`/api/daily/${USER_ID}`);
@@ -1114,8 +1491,9 @@ async function claimDaily() {
   } else {
     const res = await apiPost('/api/daily/claim', { user_id: Number(USER_ID) });
     if (res?.success) {
-      toast(`+${res.reward} 🪙!`, 'success');
+      toast(`+${res.reward} 🪙! Серия: ${res.streak} дней`, 'success');
       updateBalance(res.new_balance);
+      if (res.level_up?.occurred) toast(`🎉 Повышение уровня! ${res.level_up.new_level}`, 'success');
       loadDaily();
     } else {
       toast(res?.detail || 'Уже получено', 'error');
@@ -1143,7 +1521,6 @@ async function loadTop() {
   const players = await apiGet('/api/top?limit=10');
   const clans = await apiGet('/api/top/clans?limit=10');
 
-  // Игроки
   const pEl = document.getElementById('topPlayers');
   if (!players?.top?.length) {
     pEl.innerHTML = '<div class="empty">Нет данных</div>';
@@ -1163,7 +1540,6 @@ async function loadTop() {
     }).join('');
   }
 
-  // Кланы
   const cEl = document.getElementById('topClans');
   if (!clans?.top?.length) {
     cEl.innerHTML = '<div class="empty">Нет данных</div>';
@@ -1189,7 +1565,6 @@ async function loadClans() {
   const my = await apiGet(`/api/clan/${USER_ID}`);
   const all = await apiGet('/api/clans');
 
-  // Мой клан
   const myEl = document.getElementById('myClan');
   if (my?.has_clan) {
     myEl.innerHTML = `
@@ -1211,7 +1586,6 @@ async function loadClans() {
     myEl.innerHTML = '<div class="empty">Вы не в клане</div>';
   }
 
-  // Все кланы
   const allEl = document.getElementById('clansList');
   if (!all?.length) {
     allEl.innerHTML = '<div class="empty">Нет кланов</div>';
@@ -1293,6 +1667,27 @@ async function loadProfile() {
       <button class="btn-sm" style="background:var(--red);color:#fff;margin-top:6px;" onclick="unlinkSteam()">Отвязать</button>
     `;
   }
+
+  // Донатер
+  const donator = await apiGet(`/api/donator/${USER_ID}`);
+  if (donator) {
+    document.getElementById('donatorInfo').innerHTML = `
+      <div style="display:flex;justify-content:space-between;padding:4px 0;">
+        <span class="text-dim">Уровень донатера</span>
+        <span class="text-green" style="font-weight:700;">${donator.level}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;">
+        <span class="text-dim">Всего донатов</span>
+        <span class="text-green" style="font-weight:700;">${donator.total_donated.toLocaleString('ru-RU')} ₽</span>
+      </div>
+      ${donator.needed > 0 ? `
+        <div style="display:flex;justify-content:space-between;padding:4px 0;">
+          <span class="text-dim">До следующего уровня</span>
+          <span class="text-green" style="font-weight:700;">${donator.needed.toLocaleString('ru-RU')} ₽</span>
+        </div>
+      ` : '<div class="text-green" style="text-align:center;">⭐ Максимальный уровень!</div>'}
+    `;
+  }
 }
 
 function getXp(level) {
@@ -1337,7 +1732,7 @@ function showSection(name) {
   if (name === 'top') loadTop();
   if (name === 'clans') loadClans();
   if (name === 'profile') loadProfile();
-  if (name === 'admin' && IS_ADMIN) adminWithdrawals();
+  if (name === 'admin' && IS_ADMIN) { adminWithdrawals(); adminUsers(); adminClans(); }
 }
 
 // ==================== ТОСТЫ ====================
